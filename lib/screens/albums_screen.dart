@@ -1,3 +1,4 @@
+import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:testappeclipse/helpers/provider_helper.dart';
@@ -22,15 +23,32 @@ class AlbumsScreen extends StatelessWidget {
         itemCount: userAlbums.length,
         itemBuilder: (BuildContext context, int album) {
           return GestureDetector(
-            onTap: () => Navigator.push(context,
-                MaterialPageRoute(builder: (context) => DetailedAlbumScreen())),
+            onTap: () {
+              data.selectedAlbumID = userAlbums[album].id!;
+
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => DetailedAlbumScreen()));
+            },
             child: Card(
               child: Column(
                 children: [
-                  Text(Provider.of<ProviderHelper>(context, listen: false)
-                          .albums[album]
-                          .title ??
-                      ""),
+                  userAlbums[album].photos.isEmpty
+                      ? CircularProgressIndicator()
+                      : ExtendedImage.network(
+                          userAlbums[album].photos[0].url ?? "",
+                          width: 150,
+                          height: 150,
+                          fit: BoxFit.fill,
+                          cache: true,
+                          // border: Border.all(
+                          //     color: Colors.red, width: 1.0),
+                          // // shape: boxShape,
+                          // borderRadius: BorderRadius.all(
+                          //     Radius.circular(30.0)),
+                          //cancelToken: cancellationToken,
+                        ),
                   Text(userAlbums[album].title ?? ""),
                 ],
               ),

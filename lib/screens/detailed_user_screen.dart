@@ -1,4 +1,6 @@
+import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 import 'package:testappeclipse/helpers/provider_helper.dart';
 import 'package:testappeclipse/model/user_model.dart';
@@ -75,13 +77,34 @@ class DetailedUserScreen extends StatelessWidget {
                         }));
                       },
                       child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
                         itemCount:
                             userAlbums.length > 3 ? 3 : userAlbums.length,
                         itemBuilder: (BuildContext context, int album) {
                           return Card(
                             child: Column(
                               children: [
-                                Text(userAlbums[album].title ?? ""),
+                                userAlbums[album].photos.isEmpty
+                                    ? CircularProgressIndicator()
+                                    : ExtendedImage.network(
+                                        userAlbums[album].photos[0].url ?? "",
+                                        width: 150,
+                                        height: 150,
+                                        fit: BoxFit.fill,
+                                        cache: true,
+                                        // border: Border.all(
+                                        //     color: Colors.red, width: 1.0),
+                                        // // shape: boxShape,
+                                        // borderRadius: BorderRadius.all(
+                                        //     Radius.circular(30.0)),
+                                        //cancelToken: cancellationToken,
+                                      ),
+                                Container(
+                                    width: 150,
+                                    child: Text(
+                                      userAlbums[album].title ?? "",
+                                      softWrap: true,
+                                    )),
                               ],
                             ),
                           );

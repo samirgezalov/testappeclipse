@@ -115,11 +115,18 @@ class ProviderHelper with ChangeNotifier {
 
   List<AlbumModel> get albums {
     if (_albums.isEmpty) updateAlbums();
+    var listOfUserAlbums =
+        _albums.where((element) => element.userId == _selectedUserID).toList();
+    if (listOfUserAlbums[2].photos.isEmpty)
+      downloadAlbumPreview(listOfUserAlbums);
     return _albums;
   }
 
   set albums(List<AlbumModel> albums) {
     _albums = albums;
+    prefs.setString(
+        "ALBUMS", jsonEncode(posts.map((e) => e.toJson()).toList()));
+
     notifyListeners();
   }
 
@@ -135,5 +142,19 @@ class ProviderHelper with ChangeNotifier {
     List temp =
         jsonDecode(isCached ? prefs.getString("ALBUMS") : response.body);
     albums = temp.map((e) => AlbumModel.fromJson(e)).toList();
+  }
+
+  void downloadAlbumPreview(List<AlbumModel> list) async {
+    list.forEach((element) async {
+      List<PhotoModel> photos;
+      var response = await get(Uri.parse(
+          'https://jsonplaceholder.typicode.com/albums/${element.id}/photos'));
+      List tmpListOfPhotos = jsonDecode(response.body);
+
+      _albums.firstWhere((el) => element.id == el.id).photos =
+          tmpListOfPhotos.map((e) => PhotoModel.fromJson(e)).toList();
+    });
+
+    albums = _albums;
   }
 }
