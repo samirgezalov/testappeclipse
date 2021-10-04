@@ -8,6 +8,8 @@ import 'detailed_user_screen.dart';
 class ListOfUsersScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    // data.prefs=
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("List of users"),
@@ -19,7 +21,8 @@ class ListOfUsersScreen extends StatelessWidget {
           itemBuilder: (context, index) {
             return GestureDetector(
               onTap: () {
-                itemRef.selectedUserID = index;
+                // print(index);
+                itemRef.selectedUserID = itemRef.listOfUsers[index].id!;
                 Navigator.push(context, MaterialPageRoute(builder: (context) {
                   return DetailedUserScreen();
                 }));
@@ -34,6 +37,13 @@ class ListOfUsersScreen extends StatelessWidget {
           },
         );
       }),
+      floatingActionButton: Tooltip(
+        message: "Clear Stored Data",
+        child: FloatingActionButton(
+            onPressed:
+                Provider.of<ProviderHelper>(context, listen: false).removeSP,
+            child: Icon(Icons.delete)),
+      ),
     );
   }
 }

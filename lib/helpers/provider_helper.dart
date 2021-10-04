@@ -2,9 +2,11 @@ import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:testappeclipse/model/user_model.dart';
 
 class ProviderHelper with ChangeNotifier {
+  late SharedPreferences prefs;
   int _selectedUserID = 0;
 
   int get selectedUserID => _selectedUserID;
@@ -41,11 +43,30 @@ class ProviderHelper with ChangeNotifier {
     notifyListeners();
   }
 
-  void updateListOfUsers() async {
-    var response =
-        await get(Uri.parse('https://jsonplaceholder.typicode.com/users'));
+  void removeSP() async {
+    await prefs.clear();
+    print("delete Shared Preferences");
+  }
 
-    List temp = jsonDecode(response.body);
+  void initSP() async {
+    print("initializing Shared Preferences");
+    prefs = await SharedPreferences.getInstance();
+  }
+
+  void updateListOfUsers() async {
+    //Алгоритм кеширования можно конечно улучшить, но для текущих целей сойдет
+    prefs = await SharedPreferences.getInstance();
+    bool isCached = prefs.getString("USERS") != null;
+    var response;
+
+    if (!isCached) {
+      print("no users in SP");
+      response =
+          await get(Uri.parse('https://jsonplaceholder.typicode.com/users'));
+      prefs.setString("USERS", response.body);
+    }
+    List temp = jsonDecode(isCached ? prefs.getString("USERS") : response.body);
+
     listOfUsers = temp.map((e) => UserModel.fromJson(e)).toList();
   }
 
@@ -53,20 +74,41 @@ class ProviderHelper with ChangeNotifier {
 
   List<PostModel> get posts {
     if (_posts.isEmpty) updatePosts();
+    if (_selectedPostID > 0 && _posts[_selectedPostID].comments.isEmpty)
+      downloadPostComments();
+
     return _posts;
   }
 
   set posts(List<PostModel> posts) {
     _posts = posts;
+    prefs.setString("POSTS", jsonEncode(posts.map((e) => e.toJson()).toList()));
+
     notifyListeners();
   }
 
   void updatePosts() async {
-    var response =
-        await get(Uri.parse('https://jsonplaceholder.typicode.com/posts/'));
+    bool isCached = prefs.getString("POSTS") != null;
+    var response;
 
-    List temp = jsonDecode(response.body);
+    if (!isCached) {
+      response =
+          await get(Uri.parse('https://jsonplaceholder.typicode.com/posts/'));
+    }
+    List temp = jsonDecode(isCached ? prefs.getString("POSTS") : response.body);
     posts = temp.map((e) => PostModel.fromJson(e)).toList();
+  }
+
+  void downloadPostComments() async {
+    print('downloading comment for post $selectedPostID');
+    var response = await get(Uri.parse(
+        'https://jsonplaceholder.typicode.com/posts/$selectedPostID/comments'));
+    List temp = jsonDecode(response.body);
+    var comments = temp.map((e) => CommentModel.fromJson(e)).toList();
+    // posts[selectedPostID].comments = comments;
+    posts[selectedPostID].comments = comments;
+    posts = _posts;
+    //костылек конечно, можно поэлегантнее
   }
 
   List<AlbumModel> _albums = [];
@@ -82,10 +124,16 @@ class ProviderHelper with ChangeNotifier {
   }
 
   void updateAlbums() async {
-    var response =
-        await get(Uri.parse('https://jsonplaceholder.typicode.com/albums/'));
+    bool isCached = prefs.getString("ALBUMS") != null;
+    var response;
 
-    List temp = jsonDecode(response.body);
+    if (!isCached) {
+      response =
+          await get(Uri.parse('https://jsonplaceholder.typicode.com/albums/'));
+      prefs.setString("ALBUMS", response.body);
+    }
+    List temp =
+        jsonDecode(isCached ? prefs.getString("ALBUMS") : response.body);
     albums = temp.map((e) => AlbumModel.fromJson(e)).toList();
   }
 }

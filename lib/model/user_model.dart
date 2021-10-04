@@ -1,4 +1,4 @@
-//Модельки для удобного использования в приложении. С наллсейфти не заморачивался, и проставил вопросы, для возможного разширения при необходимости
+//Модельки для удобного использования в приложении. С наллсейфти не заморачивался, и проставил вопросы, для возможного расширения при необходимости
 
 class UserModel {
   int? id;
@@ -9,16 +9,19 @@ class UserModel {
   String? phone;
   String? website;
   Company? company;
+  List<AlbumModel> albums = [];
+  List<PostModel> posts = [];
 
-  UserModel(
-      {this.id,
-      this.name,
-      this.username,
-      this.email,
-      this.address,
-      this.phone,
-      this.website,
-      this.company});
+  UserModel({
+    this.id,
+    this.name,
+    this.username,
+    this.email,
+    this.address,
+    this.phone,
+    this.website,
+    this.company,
+  });
 
   UserModel.fromJson(Map<String, dynamic> json) {
     id = json['id'] ?? 0;
@@ -127,6 +130,7 @@ class PostModel {
   int? id;
   String? title;
   String? body;
+  List<CommentModel> comments = [];
 
   PostModel({this.userId, this.id, this.title, this.body});
 
@@ -165,6 +169,34 @@ class AlbumModel {
     data['userId'] = this.userId;
     data['id'] = this.id;
     data['title'] = this.title;
+    return data;
+  }
+}
+
+class CommentModel {
+  int? postId;
+  int? id;
+  String? name;
+  String? email;
+  String? body;
+
+  CommentModel({this.postId, this.id, this.name, this.email, this.body});
+
+  CommentModel.fromJson(Map<String, dynamic> json) {
+    postId = json['postId'];
+    id = json['id'];
+    name = json['name'];
+    email = json['email'];
+    body = json['body'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['postId'] = this.postId;
+    data['id'] = this.id;
+    data['name'] = this.name;
+    data['email'] = this.email;
+    data['body'] = this.body;
     return data;
   }
 }
