@@ -35,13 +35,24 @@ class ListOfUsersScreen extends StatelessWidget {
           },
         );
       }),
-      floatingActionButton: Tooltip(
-        message: "Clear Stored Data",
+      floatingActionButton:
+          // Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+          Tooltip(
+        message: "Clear Stored Data from Shared Prefences",
         child: FloatingActionButton(
             onPressed:
                 Provider.of<ProviderHelper>(context, listen: false).removeSP,
             child: Icon(Icons.delete)),
       ),
+      //   Tooltip(
+      //     message: "Clear values from Variables",
+      //     child: FloatingActionButton(
+      //         key: const Key("deleteVars"),
+      //         onPressed: Provider.of<ProviderHelper>(context, listen: false)
+      //             .removeVars,
+      //         child: Icon(Icons.auto_delete)),
+      //   ),
+      // ]),
     );
   }
 }

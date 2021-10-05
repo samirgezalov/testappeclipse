@@ -14,6 +14,7 @@ class DetailedUserScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print("detailed US REBUILD");
     var data = Provider.of<ProviderHelper>(context, listen: false);
     UserModel userModel = data.listOfUsers
         .firstWhere((element) => element.id == data.selectedUserID);
@@ -33,7 +34,7 @@ class DetailedUserScreen extends StatelessWidget {
                 style: const TextStyle(
                   fontStyle: FontStyle.italic,
                 )),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             AdressView(adress: userModel.address),
             const SizedBox(height: 10),
             Expanded(
@@ -42,7 +43,7 @@ class DetailedUserScreen extends StatelessWidget {
                 var userPosts = data.posts
                     .where((element) => element.userId == userModel.id)
                     .toList();
-                print("Consumer & userpost loaded");
+                // print("Consumer & userpost loaded");
                 return itemRef.posts.isEmpty
                     ? const Center(child: CircularProgressIndicator())
                     : GestureDetector(
@@ -75,53 +76,60 @@ class DetailedUserScreen extends StatelessWidget {
                 List<AlbumModel> userAlbums = itemRef.albums
                     .where((element) => element.userId == userModel.id)
                     .toList();
-                print("Consumer & albums loaded");
-                return FutureBuilder(
-                  future: data.downloadAlbumPreview(userAlbums),
-                  builder:
-                      (BuildContext context, AsyncSnapshot<dynamic> snapshot) {
-                    if (snapshot.connectionState == ConnectionState.done) {
-                      return GestureDetector(
-                        onTap: () {
-                          Navigator.push(context, MaterialPageRoute(
-                              builder: (BuildContext context) {
-                            return AlbumsScreen();
-                          }));
-                        },
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount:
-                              userAlbums.length > 3 ? 3 : userAlbums.length,
-                          itemBuilder: (BuildContext context, int album) {
-                            return Card(
-                              child: Column(
-                                children: [
-                                  userAlbums[album].photos.isEmpty
-                                      ? CircularProgressIndicator()
-                                      : ExtendedImage.network(
-                                          userAlbums[album].photos[0].url ?? "",
-                                          width: 150,
-                                          height: 150,
-                                          fit: BoxFit.fill,
-                                          cache: true,
-                                        ),
-                                  Container(
-                                      width: 150,
-                                      child: Text(
-                                        userAlbums[album].title ?? "",
-                                        softWrap: true,
-                                      )),
-                                ],
+                // print("Consumer & albums loaded");
+                return userAlbums.isEmpty
+                    ? const Center(child: CircularProgressIndicator())
+                    : FutureBuilder(
+                        future: data.downloadAlbumPreview(userAlbums),
+                        builder: (BuildContext context,
+                            AsyncSnapshot<dynamic> snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.done) {
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.push(context, MaterialPageRoute(
+                                    builder: (BuildContext context) {
+                                  return AlbumsScreen();
+                                }));
+                              },
+                              child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: userAlbums.length > 3
+                                    ? 3
+                                    : userAlbums.length,
+                                itemBuilder: (BuildContext context, int album) {
+                                  return Card(
+                                    child: Column(
+                                      children: [
+                                        userAlbums[album].photos.isEmpty
+                                            ? CircularProgressIndicator()
+                                            : ExtendedImage.network(
+                                                userAlbums[album]
+                                                        .photos[0]
+                                                        .url ??
+                                                    "",
+                                                width: 150,
+                                                height: 150,
+                                                fit: BoxFit.fill,
+                                                cache: true,
+                                              ),
+                                        Container(
+                                            width: 150,
+                                            child: Text(
+                                              userAlbums[album].title ?? "",
+                                              softWrap: true,
+                                            )),
+                                      ],
+                                    ),
+                                  );
+                                },
                               ),
                             );
-                          },
-                        ),
+                          } else {
+                            return Center(child: CircularProgressIndicator());
+                          }
+                        },
                       );
-                    } else {
-                      return Center(child: CircularProgressIndicator());
-                    }
-                  },
-                );
               }),
               // Expanded(
               //   // height: 150,

@@ -35,7 +35,9 @@ class ProviderHelper with ChangeNotifier {
 
 //////////////////////////////////////////////////////////////////////////////////////////
   List<UserModel> _listOfUsers = [];
-
+//Следующий метод будет вызван в начале, т.к первая же страница обращается к листу пользователей
+  //если пользователи есть в базе (шерд преференс) то возьмет оттуда, иначе запросит с сервера,
+  //попутно обновив базу
   List<UserModel> get listOfUsers {
     if (_listOfUsers.isEmpty) updateListOfUsers();
     return _listOfUsers;
@@ -44,13 +46,6 @@ class ProviderHelper with ChangeNotifier {
   set listOfUsers(List<UserModel> users) {
     _listOfUsers = users;
     notifyListeners();
-  }
-
-  void removeSP() async {
-    await prefs.clear();
-    _albums = [];
-    _posts = [];
-    print("delete Shared Preferences");
   }
 
   void updateListOfUsers() async {
@@ -70,8 +65,8 @@ class ProviderHelper with ChangeNotifier {
           await get(Uri.parse('https://jsonplaceholder.typicode.com/users'));
       prefs.setString("USERS", response.body);
       //При необходимости или просадке производительности  парсинг Json
-      //рекомендуется производить в отдельном Isolate . В конкретном же случае
-      //просадок не наблюдалось
+      //можно производить в отдельном Isolate . В конкретном же случае
+      //нет необходимости
     }
     List temp = jsonDecode(isCached ? prefs.getString("USERS") : response.body);
 
@@ -85,6 +80,9 @@ class ProviderHelper with ChangeNotifier {
     if (_posts.isEmpty) updatePosts();
     if (_selectedPostID > 0 && _posts[_selectedPostID].comments.isEmpty)
       downloadPostComments();
+    //Здесь конечно не хватает интерактивности, но такой задачи не стояло.
+    //Дело в том что однажды загруженная ветка коментов не будет обновлять себя,
+    //А будет брать данные из базы
 
     return _posts;
   }
@@ -106,7 +104,7 @@ class ProviderHelper with ChangeNotifier {
     }
     List temp = jsonDecode(isCached ? prefs.getString("POSTS") : response.body);
     _posts = temp.map((e) => PostModel.fromJson(e)).toList();
-    posts = _posts;
+    if (!isCached) posts = _posts;
   }
 
   void downloadPostComments() async {
@@ -127,13 +125,14 @@ class ProviderHelper with ChangeNotifier {
   List<AlbumModel> get albums {
     if (_albums.isEmpty) {
       updateAlbums();
-    } else {
-      var listOfUserAlbums = _albums
-          .where((element) => element.userId == _selectedUserID)
-          .toList();
-      if (listOfUserAlbums.last.photos.isEmpty)
-        downloadAlbumPreview(listOfUserAlbums);
     }
+    // else {
+    //   var listOfUserAlbums = _albums
+    //       .where((element) => element.userId == _selectedUserID)
+    //       .toList();
+    //   if (listOfUserAlbums.last.photos.isEmpty)
+    //     downloadAlbumPreview(listOfUserAlbums);
+    // }
     return _albums;
   }
 
@@ -145,7 +144,6 @@ class ProviderHelper with ChangeNotifier {
   }
 
   void updateAlbums() async {
-    print(prefs.getString("ALBUMS"));
     bool isCached = prefs.getString("ALBUMS") != null;
     var response;
     print(isCached);
@@ -157,12 +155,14 @@ class ProviderHelper with ChangeNotifier {
     List temp =
         jsonDecode(isCached ? prefs.getString("ALBUMS") : response.body);
     var tmp = temp.map((e) => AlbumModel.fromJson(e)).toList();
-    albums = tmp;
+    _albums = tmp;
   }
 
   Future<bool> downloadAlbumPreview(List<AlbumModel> list) async {
-    if (list.isNotEmpty && list.last.photos.isNotEmpty) return true;
+    if (list.last.photos.isNotEmpty) return true;
+
     return await Future.forEach(list, (AlbumModel element) async {
+      print('DOWNLOAD photo albums for user $_selectedUserID');
       List<PhotoModel> photos;
       var response = await get(Uri.parse(
           'https://jsonplaceholder.typicode.com/albums/${element.id}/photos'));
@@ -174,5 +174,18 @@ class ProviderHelper with ChangeNotifier {
       albums = _albums;
       return true;
     });
+  }
+
+/////////////////////////////////////////////////////////////////////////////
+  void removeVars() {
+    _albums = [];
+    _posts = [];
+    print("delete Albums and Posts vars");
+  }
+
+  void removeSP() async {
+    await prefs.clear();
+
+    print("delete Shared Preferences");
   }
 }

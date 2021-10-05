@@ -141,6 +141,11 @@ class PostModel {
     id = json['id'];
     title = json['title'];
     body = json['body'];
+    comments = (json["comments"] == null
+            ? null
+            : List<CommentModel>.from(
+                json["comments"].map((x) => CommentModel.fromJson(x)))) ??
+        [];
   }
 
   Map<String, dynamic> toJson() {
@@ -149,6 +154,7 @@ class PostModel {
     data['id'] = this.id;
     data['title'] = this.title;
     data['body'] = this.body;
+    data['comments'] = this.comments;
     return data;
   }
 }
@@ -165,6 +171,11 @@ class AlbumModel {
     userId = json['userId'];
     id = json['id'];
     title = json['title'];
+    photos = (json["photos"] == null
+            ? null
+            : List<PhotoModel>.from(
+                json["photos"].map((x) => PhotoModel.fromJson(x)))) ??
+        [];
   }
 
   Map<String, dynamic> toJson() {
@@ -172,6 +183,7 @@ class AlbumModel {
     data['userId'] = this.userId;
     data['id'] = this.id;
     data['title'] = this.title;
+    data['photos'] = this.photos;
     return data;
   }
 }

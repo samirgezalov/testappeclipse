@@ -17,7 +17,10 @@ class AlbumsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(data.listOfUsers[data.selectedUserID].username ?? ""),
+        title: Text(data.listOfUsers
+                .firstWhere((element) => element.id == data.selectedUserID)
+                .username ??
+            ""),
       ),
       body: ListView.builder(
         itemCount: userAlbums.length,
