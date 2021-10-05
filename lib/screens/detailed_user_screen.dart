@@ -10,16 +10,14 @@ import 'package:testappeclipse/widgets/adress_view.dart';
 import 'albums_screen.dart';
 
 class DetailedUserScreen extends StatelessWidget {
-  const DetailedUserScreen({Key? key}) : super(key: key);
+  DetailedUserScreen({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
-    var data = Provider.of<ProviderHelper>(context);
+    var data = Provider.of<ProviderHelper>(context, listen: false);
     UserModel userModel = data.listOfUsers
         .firstWhere((element) => element.id == data.selectedUserID);
-    var userPosts =
-        data.posts.where((element) => element.userId == userModel.id).toList();
-    var userAlbums =
-        data.albums.where((element) => element.userId == userModel.id).toList();
+
     return Scaffold(
       appBar: AppBar(title: Text(userModel.username ?? "")),
       body: Container(
@@ -37,83 +35,142 @@ class DetailedUserScreen extends StatelessWidget {
                 )),
             SizedBox(height: 10),
             AdressView(adress: userModel.address),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             Expanded(
               // height: 150,
-              child: data.posts.isEmpty
-                  ? Center(child: CircularProgressIndicator())
-                  : GestureDetector(
-                      onTap: () {
-                        Navigator.push(context,
-                            MaterialPageRoute(builder: (BuildContext context) {
-                          return PostsScreen();
-                        }));
-                      },
-                      child: ListView.builder(
-                        itemCount: userPosts.length > 3 ? 3 : userPosts.length,
-                        itemBuilder: (BuildContext context, int post) {
-                          return Card(
-                            child: ListTile(
-                              title: (Text(userPosts[post].title ?? "")),
-                              subtitle: (Text(userPosts[post].body!.substring(
-                                  0, userPosts[post].body!.indexOf("\n")))),
-                            ),
-                          );
-
-                          // Provider.of<ProviderHelper>(context).posts[post];
+              child: Consumer<ProviderHelper>(builder: (context, itemRef, ch) {
+                var userPosts = data.posts
+                    .where((element) => element.userId == userModel.id)
+                    .toList();
+                print("Consumer & userpost loaded");
+                return itemRef.posts.isEmpty
+                    ? const Center(child: CircularProgressIndicator())
+                    : GestureDetector(
+                        onTap: () {
+                          Navigator.push(context, MaterialPageRoute(
+                              builder: (BuildContext context) {
+                            return PostsScreen();
+                          }));
                         },
-                      ),
-                    ),
+                        child: ListView.builder(
+                          itemCount:
+                              userPosts.length > 3 ? 3 : userPosts.length,
+                          itemBuilder: (BuildContext context, int post) {
+                            return Card(
+                              child: ListTile(
+                                title: (Text(userPosts[post].title ?? "")),
+                                subtitle: (Text(userPosts[post].body!.substring(
+                                    0, userPosts[post].body!.indexOf("\n")))),
+                              ),
+                            );
+
+                            // Provider.of<ProviderHelper>(context).posts[post];
+                          },
+                        ),
+                      );
+              }),
             ),
             Expanded(
-              // height: 150,
-              child: data.albums.isEmpty
-                  ? const Center(child: CircularProgressIndicator())
-                  : GestureDetector(
-                      onTap: () {
-                        Navigator.push(context,
-                            MaterialPageRoute(builder: (BuildContext context) {
-                          return AlbumsScreen();
-                        }));
-                      },
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount:
-                            userAlbums.length > 3 ? 3 : userAlbums.length,
-                        itemBuilder: (BuildContext context, int album) {
-                          return Card(
-                            child: Column(
-                              children: [
-                                userAlbums[album].photos.isEmpty
-                                    ? CircularProgressIndicator()
-                                    : ExtendedImage.network(
-                                        userAlbums[album].photos[0].url ?? "",
-                                        width: 150,
-                                        height: 150,
-                                        fit: BoxFit.fill,
-                                        cache: true,
-                                        // border: Border.all(
-                                        //     color: Colors.red, width: 1.0),
-                                        // // shape: boxShape,
-                                        // borderRadius: BorderRadius.all(
-                                        //     Radius.circular(30.0)),
-                                        //cancelToken: cancellationToken,
-                                      ),
-                                Container(
-                                    width: 150,
-                                    child: Text(
-                                      userAlbums[album].title ?? "",
-                                      softWrap: true,
-                                    )),
-                              ],
-                            ),
-                          );
-
-                          // Provider.of<ProviderHelper>(context).posts[post];
+              child: Consumer<ProviderHelper>(builder: (context, itemRef, ch) {
+                List<AlbumModel> userAlbums = itemRef.albums
+                    .where((element) => element.userId == userModel.id)
+                    .toList();
+                print("Consumer & albums loaded");
+                return FutureBuilder(
+                  future: data.downloadAlbumPreview(userAlbums),
+                  builder:
+                      (BuildContext context, AsyncSnapshot<dynamic> snapshot) {
+                    if (snapshot.connectionState == ConnectionState.done) {
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(context, MaterialPageRoute(
+                              builder: (BuildContext context) {
+                            return AlbumsScreen();
+                          }));
                         },
-                      ),
-                    ),
-            ),
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount:
+                              userAlbums.length > 3 ? 3 : userAlbums.length,
+                          itemBuilder: (BuildContext context, int album) {
+                            return Card(
+                              child: Column(
+                                children: [
+                                  userAlbums[album].photos.isEmpty
+                                      ? CircularProgressIndicator()
+                                      : ExtendedImage.network(
+                                          userAlbums[album].photos[0].url ?? "",
+                                          width: 150,
+                                          height: 150,
+                                          fit: BoxFit.fill,
+                                          cache: true,
+                                        ),
+                                  Container(
+                                      width: 150,
+                                      child: Text(
+                                        userAlbums[album].title ?? "",
+                                        softWrap: true,
+                                      )),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    } else {
+                      return Center(child: CircularProgressIndicator());
+                    }
+                  },
+                );
+              }),
+              // Expanded(
+              //   // height: 150,
+              //   child: userAlbums.isEmpty
+              //       ? const Center(child: CircularProgressIndicator())
+              //       : GestureDetector(
+              //           onTap: () {
+              //             Navigator.push(context,
+              //                 MaterialPageRoute(builder: (BuildContext context) {
+              //               return AlbumsScreen();
+              //             }));
+              //           },
+              //           child: ListView.builder(
+              //             scrollDirection: Axis.horizontal,
+              //             itemCount:
+              //                 userAlbums.length > 3 ? 3 : userAlbums.length,
+              //             itemBuilder: (BuildContext context, int album) {
+              //               return Card(
+              //                 child: Column(
+              //                   children: [
+              //                     userAlbums[album].photos.isEmpty
+              //                         ? CircularProgressIndicator()
+              //                         : ExtendedImage.network(
+              //                             userAlbums[album].photos[0].url ?? "",
+              //                             width: 150,
+              //                             height: 150,
+              //                             fit: BoxFit.fill,
+              //                             cache: true,
+              //                             // border: Border.all(
+              //                             //     color: Colors.red, width: 1.0),
+              //                             // // shape: boxShape,
+              //                             // borderRadius: BorderRadius.all(
+              //                             //     Radius.circular(30.0)),
+              //                             //cancelToken: cancellationToken,
+              //                           ),
+              //                     Container(
+              //                         width: 150,
+              //                         child: Text(
+              //                           userAlbums[album].title ?? "",
+              //                           softWrap: true,
+              //                         )),
+              //                   ],
+              //                 ),
+              //               );
+              //             },
+              //           ),
+              //         ),
+              // ),
+            )
           ],
         ),
       ),

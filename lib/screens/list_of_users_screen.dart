@@ -8,8 +8,6 @@ import 'detailed_user_screen.dart';
 class ListOfUsersScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    // data.prefs=
-
     return Scaffold(
       appBar: AppBar(
         title: const Text("List of users"),

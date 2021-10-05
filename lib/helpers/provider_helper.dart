@@ -15,6 +15,7 @@ class ProviderHelper with ChangeNotifier {
     _selectedUserID = value;
   }
 
+////////////////////////////////////////////////
   int _selectedPostID = 0;
 
   int get selectedPostID => _selectedPostID;
@@ -23,6 +24,7 @@ class ProviderHelper with ChangeNotifier {
     _selectedPostID = value;
   }
 
+///////////////////////////////////////////////
   int _selectedAlbumID = 0;
 
   int get selectedAlbumID => _selectedAlbumID;
@@ -31,6 +33,7 @@ class ProviderHelper with ChangeNotifier {
     _selectedAlbumID = value;
   }
 
+//////////////////////////////////////////////////////////////////////////////////////////
   List<UserModel> _listOfUsers = [];
 
   List<UserModel> get listOfUsers {
@@ -45,31 +48,37 @@ class ProviderHelper with ChangeNotifier {
 
   void removeSP() async {
     await prefs.clear();
+    _albums = [];
+    _posts = [];
     print("delete Shared Preferences");
-  }
-
-  void initSP() async {
-    print("initializing Shared Preferences");
-    prefs = await SharedPreferences.getInstance();
   }
 
   void updateListOfUsers() async {
     //Алгоритм кеширования можно конечно улучшить, но для текущих целей сойдет
     prefs = await SharedPreferences.getInstance();
+
+    ///Вообще инициализацию Шеред префенсез желательно делать как можно раньше, однако
+    ///в данной ситуации благодоря нынешнему решению инициализация происходит по первому
+    ///обращению, и не допускает ошибку обращения следующей строки к неинициализированной
+    ///переменной prefs
     bool isCached = prefs.getString("USERS") != null;
     var response;
 
     if (!isCached) {
-      print("no users in SP");
+      print("User list doesn't exist in storage, downloading");
       response =
           await get(Uri.parse('https://jsonplaceholder.typicode.com/users'));
       prefs.setString("USERS", response.body);
+      //При необходимости или просадке производительности  парсинг Json
+      //рекомендуется производить в отдельном Isolate . В конкретном же случае
+      //просадок не наблюдалось
     }
     List temp = jsonDecode(isCached ? prefs.getString("USERS") : response.body);
 
     listOfUsers = temp.map((e) => UserModel.fromJson(e)).toList();
   }
 
+///////////////////////////////////////////////////////////////////////////////
   List<PostModel> _posts = [];
 
   List<PostModel> get posts {
@@ -96,7 +105,8 @@ class ProviderHelper with ChangeNotifier {
           await get(Uri.parse('https://jsonplaceholder.typicode.com/posts/'));
     }
     List temp = jsonDecode(isCached ? prefs.getString("POSTS") : response.body);
-    posts = temp.map((e) => PostModel.fromJson(e)).toList();
+    _posts = temp.map((e) => PostModel.fromJson(e)).toList();
+    posts = _posts;
   }
 
   void downloadPostComments() async {
@@ -111,29 +121,34 @@ class ProviderHelper with ChangeNotifier {
     //костылек конечно, можно поэлегантнее
   }
 
+/////////////////////////////////////////////////////////////////////////////////////
   List<AlbumModel> _albums = [];
 
   List<AlbumModel> get albums {
-    if (_albums.isEmpty) updateAlbums();
-    var listOfUserAlbums =
-        _albums.where((element) => element.userId == _selectedUserID).toList();
-    if (listOfUserAlbums[2].photos.isEmpty)
-      downloadAlbumPreview(listOfUserAlbums);
+    if (_albums.isEmpty) {
+      updateAlbums();
+    } else {
+      var listOfUserAlbums = _albums
+          .where((element) => element.userId == _selectedUserID)
+          .toList();
+      if (listOfUserAlbums.last.photos.isEmpty)
+        downloadAlbumPreview(listOfUserAlbums);
+    }
     return _albums;
   }
 
   set albums(List<AlbumModel> albums) {
     _albums = albums;
     prefs.setString(
-        "ALBUMS", jsonEncode(posts.map((e) => e.toJson()).toList()));
-
+        "ALBUMS", jsonEncode(_albums.map((e) => e.toJson()).toList()));
     notifyListeners();
   }
 
   void updateAlbums() async {
+    print(prefs.getString("ALBUMS"));
     bool isCached = prefs.getString("ALBUMS") != null;
     var response;
-
+    print(isCached);
     if (!isCached) {
       response =
           await get(Uri.parse('https://jsonplaceholder.typicode.com/albums/'));
@@ -141,11 +156,13 @@ class ProviderHelper with ChangeNotifier {
     }
     List temp =
         jsonDecode(isCached ? prefs.getString("ALBUMS") : response.body);
-    albums = temp.map((e) => AlbumModel.fromJson(e)).toList();
+    var tmp = temp.map((e) => AlbumModel.fromJson(e)).toList();
+    albums = tmp;
   }
 
-  void downloadAlbumPreview(List<AlbumModel> list) async {
-    list.forEach((element) async {
+  Future<bool> downloadAlbumPreview(List<AlbumModel> list) async {
+    if (list.isNotEmpty && list.last.photos.isNotEmpty) return true;
+    return await Future.forEach(list, (AlbumModel element) async {
       List<PhotoModel> photos;
       var response = await get(Uri.parse(
           'https://jsonplaceholder.typicode.com/albums/${element.id}/photos'));
@@ -153,8 +170,9 @@ class ProviderHelper with ChangeNotifier {
 
       _albums.firstWhere((el) => element.id == el.id).photos =
           tmpListOfPhotos.map((e) => PhotoModel.fromJson(e)).toList();
+    }).then((value) {
+      albums = _albums;
+      return true;
     });
-
-    albums = _albums;
   }
 }

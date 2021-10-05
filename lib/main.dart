@@ -5,6 +5,7 @@ import 'package:testappeclipse/screens/list_of_users_screen.dart';
 import 'helpers/provider_helper.dart';
 
 void main() {
+  //обьявляем Провайдер, по хорошему можно МултиПровайдер использовать, но здесь хватает и сингла
   runApp(ChangeNotifierProvider(
       create: (_) => ProviderHelper(), child: const MyApp()));
 }
