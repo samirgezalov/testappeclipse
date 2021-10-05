@@ -154,8 +154,8 @@ class ProviderHelper with ChangeNotifier {
     }
     List temp =
         jsonDecode(isCached ? prefs.getString("ALBUMS") : response.body);
-    var tmp = temp.map((e) => AlbumModel.fromJson(e)).toList();
-    _albums = tmp;
+    _albums = temp.map((e) => AlbumModel.fromJson(e)).toList();
+    if (!isCached) notifyListeners;
   }
 
   Future<bool> downloadAlbumPreview(List<AlbumModel> list) async {
